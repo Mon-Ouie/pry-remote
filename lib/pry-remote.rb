@@ -98,8 +98,16 @@ class Object
     puts "[pry-remote] Waiting for client on #{uri}"
     client.wait
 
+    # Before Pry starts, save the pager config.
+    # We want to disable this because the pager won't do anything useful in this
+    # case (it will run on the server).
+    Pry.config.pager, old_pager = false, Pry.config.pager
+
     puts "[pry-remote] Client received, starting remote sesion"
     Pry.start(self, :input => client.input_proxy, :output => client.output)
+
+    # Reset config
+    Pry.config.pager = old_pager
 
     puts "[pry-remote] Remote sesion terminated"
     client.kill
