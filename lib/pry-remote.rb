@@ -17,10 +17,6 @@ module PryRemote
 
   # A client is used to retrieve information from the client program.
   Client = Struct.new :input, :output, :thread do
-    def initialize
-      super nil, nil, nil
-    end
-
     # Waits until both an input and output are set
     def wait
       sleep 0.01 until input and output and thread
