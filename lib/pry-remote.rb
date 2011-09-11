@@ -114,4 +114,7 @@ class Object
 
     DRb.stop_service
   end
+  
+  # a handy alias as many people may think the method is named after the gem (pry-remote)
+  alias pry_remote remote_pry
 end
