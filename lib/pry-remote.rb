@@ -97,6 +97,9 @@ class Object
 
     puts "[pry-remote] Waiting for client on #{uri}"
     client.wait
+    
+    # setting a few config options relevant for remote sessions
+    Pry.config.pager = false    
 
     puts "[pry-remote] Client received, starting remote sesion"
     Pry.start(self, :input => client.input_proxy, :output => client.output)
