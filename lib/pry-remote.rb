@@ -16,18 +16,27 @@ module PryRemote
     end
   end
 
-  # ensure that system (shell command) output is redirected for remote session.
+  # Ensure that system (shell command) output is redirected for remote session.
   System = proc do |output, cmd, _|
     status = nil
     Open3.popen3 cmd do |stdin, stdout, stderr, wait_thr|
-      out = stdout.read
-      err = stderr.read
-      output.puts out if !out.empty?
-      output.puts err if !err.empty?
+      stdin.close # Send EOF to the process
+
+      until stdout.eof? and stderr.eof?
+        ios = [stdout, stderr]
+
+        if res = IO.select([stdout, stderr])
+          res[0].each do |io|
+            next if io.eof?
+            output.write io.read_nonblock(1024)
+          end
+        end
+      end
+
       status = wait_thr.value
     end
 
-    if !status.success?
+    unless status.success?
       output.puts "Error while executing command: #{cmd}"
     end
   end
@@ -151,7 +160,6 @@ class Object
 
     puts "[pry-remote] Client received, starting remote sesion"
     Pry.start(self, :input => client.input_proxy, :output => client.output)
-
   ensure
 
     # Reset output steams
