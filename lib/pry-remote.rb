@@ -137,45 +137,46 @@ class Object
     puts "[pry-remote] Waiting for client on #{uri}"
     client.wait
 
-    # If client passed stdout and stderr, redirect actual messages there.
-    old_stdout, $stdout = if client.stdout
-                            [$stdout, client.stdout]
-                          else
-                            [$stdout, $stdout]
-                          end
+    begin
+      # If client passed stdout and stderr, redirect actual messages there.
+      old_stdout, $stdout = if client.stdout
+                              [$stdout, client.stdout]
+                            else
+                              [$stdout, $stdout]
+                            end
 
-    old_stderr, $stderr = if client.stderr
-                            [$stderr, client.stderr]
-                          else
-                            [$stderr, $stderr]
-                          end
+      old_stderr, $stderr = if client.stderr
+                              [$stderr, client.stderr]
+                            else
+                              [$stderr, $stderr]
+                            end
 
-    # Before Pry starts, save the pager config.
-    # We want to disable this because the pager won't do anything useful in this
-    # case (it will run on the server).
-    Pry.config.pager, old_pager = false, Pry.config.pager
+      # Before Pry starts, save the pager config.
+      # We want to disable this because the pager won't do anything useful in
+      # this case (it will run on the server).
+      Pry.config.pager, old_pager = false, Pry.config.pager
 
-    # As above, but for system config
-    Pry.config.system, old_system = PryRemote::System, Pry.config.system
+      # As above, but for system config
+      Pry.config.system, old_system = PryRemote::System, Pry.config.system
 
-    puts "[pry-remote] Client received, starting remote sesion"
-    Pry.start(self, :input => client.input_proxy, :output => client.output)
-  ensure
+      puts "[pry-remote] Client received, starting remote sesion"
+      Pry.start(self, :input => client.input_proxy, :output => client.output)
+    ensure
+      # Reset output streams
+      $stdout = old_stdout
+      $stderr = old_stderr
 
-    # Reset output steams
-    $stdout = old_stdout
-    $stderr = old_stderr
+      # Reset config
+      Pry.config.pager = old_pager
 
-    # Reset config
-    Pry.config.pager = old_pager
+      # Reset sysem
+      Pry.config.system = old_system
 
-    # Reset sysem
-    Pry.config.system = old_system
+      puts "[pry-remote] Remote sesion terminated"
+      client.kill
 
-    puts "[pry-remote] Remote sesion terminated"
-    client.kill
-
-    DRb.stop_service
+      DRb.stop_service
+    end
   end
 
   # a handy alias as many people may think the method is named after the gem
