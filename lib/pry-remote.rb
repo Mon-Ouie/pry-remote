@@ -2,6 +2,7 @@ require 'pry'
 require 'slop'
 require 'drb'
 require 'readline'
+require 'open3'
 
 module PryRemote
   # A class to represent an input object created from DRb. This is used because
