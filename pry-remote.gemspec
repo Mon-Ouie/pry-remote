@@ -19,7 +19,7 @@ Gem::Specification.new do |s|
   s.require_paths = ["lib"]
 
   s.add_dependency "slop", "~> 2.1"
-  s.add_dependency "pry", "~> 0.9"
+  s.add_dependency "pry", "~> 0.9.5"
 
   s.executables = ["pry-remote"]
 end
