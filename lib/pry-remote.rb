@@ -2,6 +2,7 @@ require 'pry'
 require 'slop'
 require 'drb'
 require 'readline'
+require 'open3'
 
 module PryRemote
   # A class to represent an input object created from DRb. This is used because
@@ -12,6 +13,22 @@ module PryRemote
     # Reads a line from the input
     def readline(prompt)
       input.readline(prompt)
+    end
+  end
+
+  # ensure that system (shell command) output is redirected for remote session.
+  System = proc do |output, cmd, _|
+    status = nil
+    Open3.popen3 cmd do |stdin, stdout, stderr, wait_thr|
+      out = stdout.read
+      err = stderr.read
+      output.puts out if !out.empty?
+      output.puts err if !err.empty?
+      status = wait_thr.value
+    end
+
+    if !status.success?
+      output.puts "Error while executing command: #{cmd}"
     end
   end
 
@@ -129,8 +146,13 @@ class Object
     # case (it will run on the server).
     Pry.config.pager, old_pager = false, Pry.config.pager
 
+    # As above, but for system config
+    Pry.config.system, old_system = PryRemote::System, Pry.config.system
+
     puts "[pry-remote] Client received, starting remote sesion"
     Pry.start(self, :input => client.input_proxy, :output => client.output)
+
+  ensure
 
     # Reset output steams
     $stdout = old_stdout
@@ -138,6 +160,9 @@ class Object
 
     # Reset config
     Pry.config.pager = old_pager
+
+    # Reset sysem
+    Pry.config.system = old_system
 
     puts "[pry-remote] Remote sesion terminated"
     client.kill
