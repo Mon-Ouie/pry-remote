@@ -16,7 +16,7 @@ module PryRemote
   end
 
   # A client is used to retrieve information from the client program.
-  Client = Struct.new :input, :output, :thread do
+  Client = Struct.new :input, :output, :thread, :stdout, :stderr do
     # Waits until both an input and output are set
     def wait
       sleep 0.01 until input and output and thread
@@ -37,16 +37,20 @@ module PryRemote
   class CLI
     def initialize(args = ARGV)
       params = Slop.parse args, :help => true do
-        banner "#$PROGRAM_NAME [-h HOST] [-p PORT]"
+        banner "#$PROGRAM_NAME [OPTIONS]"
 
         on :h, :host, "Host of the server (localhost)", true,
            :default => "localhost"
         on :p, :port, "Port of the server (9876)", true, :as => Integer,
            :default => 9876
+        on :c, :capture, "Captures $stdout and $stderr from the server (true)",
+           :default => true
       end
 
       @host = params[:host]
       @port = params[:port]
+
+      @capture = params[:capture]
     end
 
     # @return [String] Host of the server
@@ -59,6 +63,9 @@ module PryRemote
     def uri
       "druby://#{host}:#{port}"
     end
+
+    attr_reader :capture
+    alias capture? capture
 
     # Connects to the server
     def run
@@ -76,6 +83,12 @@ module PryRemote
 
       client.input  = input
       client.output = $stdout
+
+      if capture?
+        client.stdout = $stdout
+        client.stderr = $stderr
+      end
+
       client.thread = Thread.current
 
       sleep
@@ -98,6 +111,19 @@ class Object
     puts "[pry-remote] Waiting for client on #{uri}"
     client.wait
 
+    # If client passed stdout and stderr, redirect actual messages there.
+    old_stdout, $stdout = if client.stdout
+                            [$stdout, client.stdout]
+                          else
+                            [$stdout, $stdout]
+                          end
+
+    old_stderr, $stderr = if client.stderr
+                            [$stderr, client.stderr]
+                          else
+                            [$stderr, $stderr]
+                          end
+
     # Before Pry starts, save the pager config.
     # We want to disable this because the pager won't do anything useful in this
     # case (it will run on the server).
@@ -105,6 +131,10 @@ class Object
 
     puts "[pry-remote] Client received, starting remote sesion"
     Pry.start(self, :input => client.input_proxy, :output => client.output)
+
+    # Reset output steams
+    $stdout = old_stdout
+    $stderr = old_stderr
 
     # Reset config
     Pry.config.pager = old_pager
