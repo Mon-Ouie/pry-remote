@@ -4,7 +4,7 @@
 Gem::Specification.new do |s|
   s.name = "pry-remote"
 
-  s.version = "0.0.2"
+  s.version = "0.1.0"
 
   s.summary     = "Connect to Pry remotely"
   s.description = "Connect to Pry remotely using DRb"
