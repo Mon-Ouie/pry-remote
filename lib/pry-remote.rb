@@ -23,8 +23,6 @@ module PryRemote
       stdin.close # Send EOF to the process
 
       until stdout.eof? and stderr.eof?
-        ios = [stdout, stderr]
-
         if res = IO.select([stdout, stderr])
           res[0].each do |io|
             next if io.eof?
