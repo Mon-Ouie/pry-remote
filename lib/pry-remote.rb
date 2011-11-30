@@ -5,6 +5,9 @@ require 'readline'
 require 'open3'
 
 module PryRemote
+  DefaultHost = "localhost"
+  DefaultPort = 9876
+
   # A class to represent an input object created from DRb. This is used because
   # Pry checks for arity to know if a prompt should be passed to the object.
   #
@@ -58,11 +61,11 @@ module PryRemote
   end
 
   class Server
-    def self.run(object, host = "localhost", port = 9876)
+    def self.run(object, host = DefaultHost, port = DefaultPort)
       new(object, host, port).run
     end
 
-    def initialize(object, host = "loclahost", port = 9876)
+    def initialize(object, host = "loclahost", port = DefaultPort)
       @uri    = "druby://#{host}:#{port}"
       @object = object
 
@@ -138,10 +141,10 @@ module PryRemote
       params = Slop.parse args, :help => true do
         banner "#$PROGRAM_NAME [OPTIONS]"
 
-        on :h, :host, "Host of the server (localhost)", true,
-           :default => "localhost"
-        on :p, :port, "Port of the server (9876)", true, :as => Integer,
-           :default => 9876
+        on :h, :host, "Host of the server (#{DefaultHost})", true,
+           :default => DefaultHost
+        on :p, :port, "Port of the server (#{DefaultPort})", true,
+           :as => Integer, :default => DefaultPort
         on :c, :capture, "Captures $stdout and $stderr from the server (true)",
            :default => true
       end
@@ -201,7 +204,7 @@ class Object
   #
   # @param [String]  host Host of the server
   # @param [Integer] port Port of the server
-  def remote_pry(host = "localhost", port = 9876)
+  def remote_pry(host = PryRemote::DefaultHost, port = PryRemote::DefaultPort)
     PryRemote::Server.new(self, host, port).run
   end
 
