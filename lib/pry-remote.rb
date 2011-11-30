@@ -57,6 +57,81 @@ module PryRemote
     end
   end
 
+  class Server
+    def self.run(object, host = "localhost", port = 9876)
+      new(object, host, port).run
+    end
+
+    def initialize(object, host = "loclahost", port = 9876)
+      @uri    = "druby://#{host}:#{port}"
+      @object = object
+
+      @client = PryRemote::Client.new
+      DRb.start_service @uri, @client
+
+      puts "[pry-remote] Waiting for client on #@uri"
+      @client.wait
+
+      puts "[pry-remote] Client received, starting remote sesion"
+    end
+
+    # Code that has to be called for Pry-remote to work properly
+    def setup
+      # If client passed stdout and stderr, redirect actual messages there.
+      @old_stdout, $stdout = if @client.stdout
+                               [$stdout, @client.stdout]
+                             else
+                               [$stdout, $stdout]
+                             end
+
+      @old_stderr, $stderr = if @client.stderr
+                               [$stderr, @client.stderr]
+                             else
+                               [$stderr, $stderr]
+                             end
+
+      # Before Pry starts, save the pager config.
+      # We want to disable this because the pager won't do anything useful in
+      # this case (it will run on the server).
+      Pry.config.pager, @old_pager = false, Pry.config.pager
+
+      # As above, but for system config
+      Pry.config.system, @old_system = PryRemote::System, Pry.config.system
+    end
+
+    # Code that has to be called after setup to return to the initial state
+    def teardown
+      # Reset output streams
+      $stdout = @old_stdout
+      $stderr = @old_stderr
+
+      # Reset config
+      Pry.config.pager = @old_pager
+
+      # Reset sysem
+      Pry.config.system = @old_system
+
+      puts "[pry-remote] Remote sesion terminated"
+      @client.kill
+
+      DRb.stop_service
+    end
+
+    # Actually runs pry-remote
+    def run
+      setup
+      Pry.start(@object, :input => client.input_proxy, :output => client.output)
+    ensure
+      teardown
+    end
+
+    # @return Object to enter into
+    attr_reader :object
+
+    # @return [PryServer::Client] Client connecting to the pry-remote server
+    attr_reader :client
+  end
+
   # Parses arguments and allows to start the client.
   class CLI
     def initialize(args = ARGV)
@@ -127,54 +202,7 @@ class Object
   # @param [String]  host Host of the server
   # @param [Integer] port Port of the server
   def remote_pry(host = "localhost", port = 9876)
-    uri = "druby://#{host}:#{port}"
-
-    client = PryRemote::Client.new
-    DRb.start_service uri, client
-
-    puts "[pry-remote] Waiting for client on #{uri}"
-    client.wait
-
-    begin
-      # If client passed stdout and stderr, redirect actual messages there.
-      old_stdout, $stdout = if client.stdout
-                              [$stdout, client.stdout]
-                            else
-                              [$stdout, $stdout]
-                            end
-
-      old_stderr, $stderr = if client.stderr
-                              [$stderr, client.stderr]
-                            else
-                              [$stderr, $stderr]
-                            end
-
-      # Before Pry starts, save the pager config.
-      # We want to disable this because the pager won't do anything useful in
-      # this case (it will run on the server).
-      Pry.config.pager, old_pager = false, Pry.config.pager
-
-      # As above, but for system config
-      Pry.config.system, old_system = PryRemote::System, Pry.config.system
-
-      puts "[pry-remote] Client received, starting remote sesion"
-      Pry.start(self, :input => client.input_proxy, :output => client.output)
-    ensure
-      # Reset output streams
-      $stdout = old_stdout
-      $stderr = old_stderr
-
-      # Reset config
-      Pry.config.pager = old_pager
-
-      # Reset sysem
-      Pry.config.system = old_system
-
-      puts "[pry-remote] Remote sesion terminated"
-      client.kill
-
-      DRb.stop_service
-    end
+    PryRemote::Server.new(self, host, port).run
   end
 
   # a handy alias as many people may think the method is named after the gem
