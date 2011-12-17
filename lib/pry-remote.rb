@@ -233,6 +233,8 @@ module PryRemote
            :default => DefaultHost
         on :p, :port=, "Port of the server (#{DefaultPort})", :argument => :optional,
            :as => Integer, :default => DefaultPort
+        on :w, :wait, "Wait for the pry server to come up",
+           :default => false
         on :c, :capture, "Captures $stdout and $stderr from the server (true)",
            :default => true
         on :f, "Disables loading of .pryrc and its plugins, requires, and command history "
@@ -243,6 +245,7 @@ module PryRemote
       @host = params[:server]
       @port = params[:port]
 
+      @wait = params[:wait]
       @capture = params[:capture]
 
       Pry.initial_session_setup unless params[:f]
@@ -259,7 +262,9 @@ module PryRemote
       "druby://#{host}:#{port}"
     end
 
+    attr_reader :wait
     attr_reader :capture
+    alias :wait? :wait
     alias capture? capture
 
     # Connects to the server
@@ -274,9 +279,17 @@ module PryRemote
       input  = IOUndumpedProxy.new(input)
       output = IOUndumpedProxy.new(output)
 
-      client.input  = input
-
-      client.output = output
+      begin
+        client.input  = input
+        client.output = $stdout
+      rescue DRb::DRbConnError => ex
+        if wait?
+          sleep 1
+          retry
+        else
+          raise ex
+        end
+      end
 
       if capture?
         client.stdout = $stdout
