@@ -4,7 +4,7 @@
 Gem::Specification.new do |s|
   s.name = "pry-remote"
 
-  s.version = "0.1.2"
+  s.version = "0.1.3"
 
   s.summary     = "Connect to Pry remotely"
   s.description = "Connect to Pry remotely using DRb"
@@ -18,8 +18,9 @@ Gem::Specification.new do |s|
 
   s.require_paths = ["lib"]
 
-  s.add_dependency "slop", "~> 3.0"
-  s.add_dependency "pry", "~> 0.9.9"
+
+  s.add_dependency "slop", "~> 2.1"
+  s.add_dependency "pry",  "~> 0.9.9"
 
   s.executables = ["pry-remote"]
 end
