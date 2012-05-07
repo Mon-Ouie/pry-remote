@@ -75,7 +75,7 @@ module PryRemote
       puts "[pry-remote] Waiting for client on #@uri"
       @client.wait
 
-      puts "[pry-remote] Client received, starting remote sesion"
+      puts "[pry-remote] Client received, starting remote session"
     end
 
     # Code that has to be called for Pry-remote to work properly
@@ -114,7 +114,7 @@ module PryRemote
       # Reset sysem
       Pry.config.system = @old_system
 
-      puts "[pry-remote] Remote sesion terminated"
+      puts "[pry-remote] Remote session terminated"
       @client.kill
 
       DRb.stop_service
