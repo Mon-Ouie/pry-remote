@@ -145,6 +145,8 @@ module PryRemote
            :default => DefaultHost
         on :p, :port, "Port of the server (#{DefaultPort})", true,
            :as => Integer, :default => DefaultPort
+        on :w, :wait, "Wait for the pry server to come up",
+           :default => false
         on :c, :capture, "Captures $stdout and $stderr from the server (true)",
            :default => true
       end
@@ -152,6 +154,7 @@ module PryRemote
       @host = params[:host]
       @port = params[:port]
 
+      @wait = params[:wait]
       @capture = params[:capture]
     end
 
@@ -166,7 +169,9 @@ module PryRemote
       "druby://#{host}:#{port}"
     end
 
+    attr_reader :wait
     attr_reader :capture
+    alias :wait? :wait
     alias capture? capture
 
     # Connects to the server
@@ -183,8 +188,17 @@ module PryRemote
         Readline.readline(prompt, true)
       end
 
-      client.input  = input
-      client.output = $stdout
+      begin
+        client.input  = input
+        client.output = $stdout
+      rescue DRb::DRbConnError => ex
+        if wait?
+          sleep 1
+          retry
+        else
+          raise ex
+        end
+      end
 
       if capture?
         client.stdout = $stdout
