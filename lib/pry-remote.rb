@@ -19,6 +19,45 @@ module PryRemote
     end
   end
 
+  # Class used to wrap modules so that they can be sent through DRb. This will
+  # mostly be used for Readline.
+  class IOModuleProxy
+    include DRb::DRbUndumped
+
+    def initialize(mod)
+      @mod = mod
+    end
+
+    def completion_proc=(val)
+      if @mod.respond_to? :completion_proc=
+        @mod.completion_proc = val
+      end
+    end
+
+    attr_reader :completion_proc
+
+    def readline(prompt)
+      @mod.readline(prompt)
+    end
+
+    def puts(*lines)
+      @mod.puts(*lines)
+    end
+
+    def print(*objs)
+      @mod.puts(*objs)
+    end
+
+    def write(data)
+      @mod.write data
+    end
+
+    def <<(data)
+      @mod << data
+      self
+    end
+  end
+
   # Ensure that system (shell command) output is redirected for remote session.
   System = proc do |output, cmd, _|
     status = nil
@@ -147,12 +186,15 @@ module PryRemote
            :as => Integer, :default => DefaultPort
         on :c, :capture, "Captures $stdout and $stderr from the server (true)",
            :default => true
+        on :f, "Disables loading of .pryrc to get input and "
       end
 
       @host = params[:host]
       @port = params[:port]
 
       @capture = params[:capture]
+
+      Pry.initial_session_setup unless params[:f]
     end
 
     # @return [String] Host of the server
@@ -170,21 +212,18 @@ module PryRemote
     alias capture? capture
 
     # Connects to the server
-    def run
+    #
+    # @param [IO] input  Object holding input for pry-remote
+    # @param [IO] output Object pry-debug will send its output to
+    def run(input = Pry.config.input, output = Pry.config.output)
       DRb.start_service
       client = DRbObject.new(nil, uri)
 
-      # Passing Readline to DRb won't actually make it use our readline
-      # object. Instead, it will use the server-side readilne. Therefore, we
-      # create a simple proxy here.
-
-      input = Object.new
-      def input.readline(prompt)
-        Readline.readline(prompt, true)
-      end
+      input  = IOModuleProxy.new(input)  if input.is_a?  Module
+      output = IOModuleProxy.new(output) if output.is_a? Module
 
       client.input  = input
-      client.output = $stdout
+      client.output = output
 
       if capture?
         client.stdout = $stdout
