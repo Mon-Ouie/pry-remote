@@ -15,7 +15,16 @@ module PryRemote
   InputProxy = Struct.new :input do
     # Reads a line from the input
     def readline(prompt)
-      input.readline(prompt)
+      case readline_arity
+      when 1 then input.readline(prompt)
+      else        input.readline
+      end
+    end
+
+    def readline_arity
+      input.method_missing(:method, :readline).arity
+    rescue NameError
+      0
     end
   end
 
