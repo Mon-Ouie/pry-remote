@@ -281,7 +281,7 @@ module PryRemote
 
       begin
         client.input  = input
-        client.output = $stdout
+        client.output = output
       rescue DRb::DRbConnError => ex
         if wait?
           sleep 1
