@@ -5,7 +5,7 @@ require 'readline'
 require 'open3'
 
 module PryRemote
-  DefaultHost = "localhost"
+  DefaultHost = "127.0.0.1"
   DefaultPort = 9876
 
   # A class to represent an input object created from DRb. This is used because
@@ -15,7 +15,74 @@ module PryRemote
   InputProxy = Struct.new :input do
     # Reads a line from the input
     def readline(prompt)
-      input.readline(prompt)
+      case readline_arity
+      when 1 then input.readline(prompt)
+      else        input.readline
+      end
+    end
+
+    def completion_proc=(val)
+      input.completion_proc = val
+    end
+
+    def readline_arity
+      input.method_missing(:method, :readline).arity
+    rescue NameError
+      0
+    end
+  end
+
+  # Class used to wrap inputs so that they can be sent through DRb.
+  #
+  # This is to ensure the input is used locally and not reconstructed on the
+  # server by DRb.
+  class IOUndumpedProxy
+    include DRb::DRbUndumped
+
+    def initialize(obj)
+      @obj = obj
+    end
+
+    def completion_proc=(val)
+      if @obj.respond_to? :completion_proc=
+        @obj.completion_proc = val
+      end
+    end
+
+    def completion_proc
+      @obj.completion_proc if @obj.respond_to? :completion_proc
+    end
+
+    def readline(prompt)
+      if @obj.method(:readline).arity == 1
+        @obj.readline(prompt)
+      else
+        $stdout.print prompt
+        @obj.readline
+      end
+    end
+
+    def puts(*lines)
+      @obj.puts(*lines)
+    end
+
+    def print(*objs)
+      @obj.print(*objs)
+    end
+
+    def write(data)
+      @obj.write data
+    end
+
+    def <<(data)
+      @obj << data
+      self
+    end
+
+    # Some versions of Pry expect $stdout or its output objects to respond to
+    # this message.
+    def tty?
+      false
     end
   end
 
@@ -61,21 +128,23 @@ module PryRemote
   end
 
   class Server
-    def self.run(object, host = DefaultHost, port = DefaultPort)
-      new(object, host, port).run
+    def self.run(object, host = DefaultHost, port = DefaultPort, options = {})
+      new(object, host, port, options).run
     end
 
-    def initialize(object, host = "loclahost", port = DefaultPort)
-      @uri    = "druby://#{host}:#{port}"
-      @object = object
+    def initialize(object, host = DefaultHost, port = DefaultPort, options = {})
+      @host    = host
+      @port    = port
+      @object  = object
+      @options = options
 
       @client = PryRemote::Client.new
-      DRb.start_service @uri, @client
+      DRb.start_service uri, @client
 
-      puts "[pry-remote] Waiting for client on #@uri"
+      puts "[pry-remote] Waiting for client on #{uri}"
       @client.wait
 
-      puts "[pry-remote] Client received, starting remote sesion"
+      puts "[pry-remote] Client received, starting remote session"
     end
 
     # Code that has to be called for Pry-remote to work properly
@@ -114,16 +183,23 @@ module PryRemote
       # Reset sysem
       Pry.config.system = @old_system
 
-      puts "[pry-remote] Remote sesion terminated"
-      @client.kill
+      puts "[pry-remote] Remote session terminated"
 
-      DRb.stop_service
+      begin
+        @client.kill
+      rescue DRb::DRbConnError
+        puts "[pry-remote] Continuing to stop service"
+      ensure
+        puts "[pry-remote] Ensure stop service"
+        DRb.stop_service
+      end
     end
 
     # Actually runs pry-remote
     def run
       setup
-      Pry.start(@object, :input => client.input_proxy, :output => client.output)
+
+      Pry.start(@object, @options.merge(:input => client.input_proxy, :output => client.output))
     ensure
       teardown
     end
@@ -133,6 +209,18 @@ module PryRemote
 
     # @return [PryServer::Client] Client connecting to the pry-remote server
     attr_reader :client
+
+    # @return [String] Host of the server
+    attr_reader :host
+
+    # @return [Integer] Port of the server
+    attr_reader :port
+
+    # @return [String] URI for DRb
+    def uri
+      "druby://#{host}:#{port}"
+    end
+
   end
 
   # Parses arguments and allows to start the client.
@@ -141,21 +229,26 @@ module PryRemote
       params = Slop.parse args, :help => true do
         banner "#$PROGRAM_NAME [OPTIONS]"
 
-        on :h, :host, "Host of the server (#{DefaultHost})", true,
+        on :s, :server=, "Host of the server (#{DefaultHost})", :argument => :optional,
            :default => DefaultHost
-        on :p, :port, "Port of the server (#{DefaultPort})", true,
+        on :p, :port=, "Port of the server (#{DefaultPort})", :argument => :optional,
            :as => Integer, :default => DefaultPort
         on :w, :wait, "Wait for the pry server to come up",
            :default => false
         on :c, :capture, "Captures $stdout and $stderr from the server (true)",
            :default => true
+        on :f, "Disables loading of .pryrc and its plugins, requires, and command history "
       end
 
-      @host = params[:host]
+      exit if params.help?
+
+      @host = params[:server]
       @port = params[:port]
 
       @wait = params[:wait]
       @capture = params[:capture]
+
+      Pry.initial_session_setup unless params[:f]
     end
 
     # @return [String] Host of the server
@@ -175,22 +268,20 @@ module PryRemote
     alias capture? capture
 
     # Connects to the server
-    def run
-      DRb.start_service
+    #
+    # @param [IO] input  Object holding input for pry-remote
+    # @param [IO] output Object pry-debug will send its output to
+    def run(input = Pry.config.input, output = Pry.config.output)
+      local_ip = UDPSocket.open {|s| s.connect(@host, 1); s.addr.last}
+      DRb.start_service "druby://#{local_ip}:0"
       client = DRbObject.new(nil, uri)
 
-      # Passing Readline to DRb won't actually make it use our readline
-      # object. Instead, it will use the server-side readilne. Therefore, we
-      # create a simple proxy here.
-
-      input = Object.new
-      def input.readline(prompt)
-        Readline.readline(prompt, true)
-      end
+      input  = IOUndumpedProxy.new(input)
+      output = IOUndumpedProxy.new(output)
 
       begin
         client.input  = input
-        client.output = $stdout
+        client.output = output
       rescue DRb::DRbConnError => ex
         if wait?
           sleep 1
@@ -218,8 +309,9 @@ class Object
   #
   # @param [String]  host Host of the server
   # @param [Integer] port Port of the server
-  def remote_pry(host = PryRemote::DefaultHost, port = PryRemote::DefaultPort)
-    PryRemote::Server.new(self, host, port).run
+  # @param [Hash] options Options to be passed to Pry.start
+  def remote_pry(host = PryRemote::DefaultHost, port = PryRemote::DefaultPort, options = {})
+    PryRemote::Server.new(self, host, port, options).run
   end
 
   # a handy alias as many people may think the method is named after the gem
