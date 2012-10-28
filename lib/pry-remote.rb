@@ -276,6 +276,7 @@ module PryRemote
       DRb.start_service "druby://#{local_ip}:0"
       client = DRbObject.new(nil, uri)
 
+<<<<<<< HEAD
       input  = IOUndumpedProxy.new(input)
       output = IOUndumpedProxy.new(output)
 
@@ -290,6 +291,13 @@ module PryRemote
           raise ex
         end
       end
+=======
+      input  = IOModuleProxy.new(input)
+      output = IOModuleProxy.new(output)
+
+      client.input  = input
+      client.output = output
+>>>>>>> Made pry-remote proxy any input/output object
 
       if capture?
         client.stdout = $stdout
