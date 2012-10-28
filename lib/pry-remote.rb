@@ -21,6 +21,10 @@ module PryRemote
       end
     end
 
+    def completion_proc=(val)
+      input.completion_proc = val
+    end
+
     def readline_arity
       input.method_missing(:method, :readline).arity
     rescue NameError
@@ -54,7 +58,7 @@ module PryRemote
     end
 
     def print(*objs)
-      @mod.puts(*objs)
+      @mod.print(*objs)
     end
 
     def write(data)
@@ -228,8 +232,8 @@ module PryRemote
       DRb.start_service
       client = DRbObject.new(nil, uri)
 
-      input  = IOModuleProxy.new(input)  if input.is_a?  Module
-      output = IOModuleProxy.new(output) if output.is_a? Module
+      input  = IOModuleProxy.new(input)
+      output = IOModuleProxy.new(output)
 
       client.input  = input
       client.output = output
