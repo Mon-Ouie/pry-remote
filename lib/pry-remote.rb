@@ -113,7 +113,7 @@ module PryRemote
       new(object, host, port).run
     end
 
-    def initialize(object, host = "loclahost", port = DefaultPort)
+    def initialize(object, host = DefaultHost, port = DefaultPort)
       @uri    = "druby://#{host}:#{port}"
       @object = object
 
