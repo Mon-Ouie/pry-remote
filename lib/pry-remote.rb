@@ -193,7 +193,7 @@ module PryRemote
       params = Slop.parse args, :help => true do
         banner "#$PROGRAM_NAME [OPTIONS]"
 
-        on :h, :host, "Host of the server (#{DefaultHost})", true,
+        on :s, :server, "Host of the server (#{DefaultHost})", true,
            :default => DefaultHost
         on :p, :port, "Port of the server (#{DefaultPort})", true,
            :as => Integer, :default => DefaultPort
