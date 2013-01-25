@@ -189,13 +189,13 @@ module PryRemote
       params = Slop.parse args, :help => true do
         banner "#$PROGRAM_NAME [OPTIONS]"
 
-        on :s, :server, "Host of the server (#{DefaultHost})", true,
+        on :s, :server=, "Host of the server (#{DefaultHost})", :argument => :optional,
            :default => DefaultHost
-        on :p, :port, "Port of the server (#{DefaultPort})", true,
+        on :p, :port=, "Port of the server (#{DefaultPort})", :argument => :optional,
            :as => Integer, :default => DefaultPort
         on :c, :capture, "Captures $stdout and $stderr from the server (true)",
            :default => true
-        on :f, "Disables loading of .pryrc to get input and "
+        on :f, "Disables loading of .pryrc and its plugins, requires, and command history "
       end
 
       @host = params[:host]
