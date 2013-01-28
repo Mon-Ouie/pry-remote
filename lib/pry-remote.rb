@@ -163,9 +163,15 @@ module PryRemote
       Pry.config.system = @old_system
 
       puts "[pry-remote] Remote session terminated"
-      @client.kill
-
-      DRb.stop_service
+      
+      begin
+        @client.kill
+      rescue DRb::DRbConnError
+        puts "[pry-remote] Continuing to stop service"
+      ensure
+        puts "[pry-remote] Ensure stop service"
+        DRb.stop_service
+      end   
     end
 
     # Actually runs pry-remote
