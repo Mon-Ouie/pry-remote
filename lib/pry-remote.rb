@@ -240,6 +240,7 @@ module PryRemote
         on :f, "Disables loading of .pryrc and its plugins, requires, and command history "
       end
 
+
       exit if params.help?
 
       @host = params[:server]
