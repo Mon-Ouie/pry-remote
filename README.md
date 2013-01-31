@@ -15,7 +15,7 @@ Here's a program starting pry-remote:
 
     class Foo
       def initialize(x, y)
-        binding.remote_pry
+        binding.pry_remote
       end
     end
 

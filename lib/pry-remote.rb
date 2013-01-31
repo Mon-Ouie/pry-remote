@@ -5,7 +5,7 @@ require 'readline'
 require 'open3'
 
 module PryRemote
-  DefaultHost = "localhost"
+  DefaultHost = "127.0.0.1"
   DefaultPort = 9876
 
   # A class to represent an input object created from DRb. This is used because
@@ -163,9 +163,15 @@ module PryRemote
       Pry.config.system = @old_system
 
       puts "[pry-remote] Remote session terminated"
-      @client.kill
-
-      DRb.stop_service
+      
+      begin
+        @client.kill
+      rescue DRb::DRbConnError
+        puts "[pry-remote] Continuing to stop service"
+      ensure
+        puts "[pry-remote] Ensure stop service"
+        DRb.stop_service
+      end   
     end
 
     # Actually runs pry-remote
@@ -189,15 +195,17 @@ module PryRemote
       params = Slop.parse args, :help => true do
         banner "#$PROGRAM_NAME [OPTIONS]"
 
-        on :h, :host, "Host of the server (#{DefaultHost})", true,
+        on :s, :server=, "Host of the server (#{DefaultHost})", :argument => :optional,
            :default => DefaultHost
-        on :p, :port, "Port of the server (#{DefaultPort})", true,
+        on :p, :port=, "Port of the server (#{DefaultPort})", :argument => :optional,
            :as => Integer, :default => DefaultPort
         on :c, :capture, "Captures $stdout and $stderr from the server (true)",
            :default => true
-        on :f, "Disables loading of .pryrc to get input and "
+        on :f, "Disables loading of .pryrc and its plugins, requires, and command history "
       end
-
+      
+      exit if params.help?
+      
       @host = params[:host]
       @port = params[:port]
 
