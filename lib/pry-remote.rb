@@ -198,7 +198,7 @@ module PryRemote
         on :f, "Disables loading of .pryrc to get input and "
       end
 
-      @host = params[:host]
+      @host = params[:host] || DefaultHost
       @port = params[:port]
 
       @capture = params[:capture]
