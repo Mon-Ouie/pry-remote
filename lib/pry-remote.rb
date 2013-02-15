@@ -32,8 +32,10 @@ module PryRemote
     end
   end
 
-  # Class used to wrap modules so that they can be sent through DRb. This will
-  # mostly be used for Readline.
+  # Class used to wrap inputs so that they can be sent through DRb.
+  #
+  # This is to ensure the input is used locally and not reconstructed on the
+  # server by DRb.
   class IOModuleProxy
     include DRb::DRbUndumped
 
@@ -167,7 +169,7 @@ module PryRemote
       Pry.config.system = @old_system
 
       puts "[pry-remote] Remote session terminated"
-      
+
       begin
         @client.kill
       rescue DRb::DRbConnError
@@ -175,7 +177,7 @@ module PryRemote
       ensure
         puts "[pry-remote] Ensure stop service"
         DRb.stop_service
-      end   
+      end
     end
 
     # Actually runs pry-remote
@@ -207,9 +209,9 @@ module PryRemote
            :default => true
         on :f, "Disables loading of .pryrc and its plugins, requires, and command history "
       end
-      
+
       exit if params.help?
-      
+
       @host = params[:host]
       @port = params[:port]
 
