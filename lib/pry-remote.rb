@@ -54,7 +54,10 @@ module PryRemote
     end
 
     def readline(prompt)
-      @mod.readline(prompt)
+      case @mod.method(:readline).arity
+      when  1 then @mod.readline(prompt)
+      else         @mod.readline
+      end
     end
 
     def puts(*lines)
