@@ -49,7 +49,9 @@ module PryRemote
       end
     end
 
-    attr_reader :completion_proc
+    def completion_proc
+      @mod.completion_proc if @mod.respond_to? :completion_proc
+    end
 
     def readline(prompt)
       @mod.readline(prompt)
