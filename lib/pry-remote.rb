@@ -36,44 +36,44 @@ module PryRemote
   #
   # This is to ensure the input is used locally and not reconstructed on the
   # server by DRb.
-  class IOModuleProxy
+  class IOUndumpedProxy
     include DRb::DRbUndumped
 
-    def initialize(mod)
-      @mod = mod
+    def initialize(obj)
+      @obj = obj
     end
 
     def completion_proc=(val)
-      if @mod.respond_to? :completion_proc=
-        @mod.completion_proc = val
+      if @obj.respond_to? :completion_proc=
+        @obj.completion_proc = val
       end
     end
 
     def completion_proc
-      @mod.completion_proc if @mod.respond_to? :completion_proc
+      @obj.completion_proc if @obj.respond_to? :completion_proc
     end
 
     def readline(prompt)
-      case @mod.method(:readline).arity
-      when  1 then @mod.readline(prompt)
-      else         @mod.readline
+      case @obj.method(:readline).arity
+      when  1 then @obj.readline(prompt)
+      else         @obj.readline
       end
     end
 
     def puts(*lines)
-      @mod.puts(*lines)
+      @obj.puts(*lines)
     end
 
     def print(*objs)
-      @mod.print(*objs)
+      @obj.print(*objs)
     end
 
     def write(data)
-      @mod.write data
+      @obj.write data
     end
 
     def <<(data)
-      @mod << data
+      @obj << data
       self
     end
   end
@@ -247,8 +247,8 @@ module PryRemote
       DRb.start_service
       client = DRbObject.new(nil, uri)
 
-      input  = IOModuleProxy.new(input)
-      output = IOModuleProxy.new(output)
+      input  = IOUndumpedProxy.new(input)
+      output = IOUndumpedProxy.new(output)
 
       client.input  = input
       client.output = output
