@@ -54,9 +54,11 @@ module PryRemote
     end
 
     def readline(prompt)
-      case @obj.method(:readline).arity
-      when  1 then @obj.readline(prompt)
-      else         @obj.readline
+      if @obj.method(:readline).arity == 1
+        @obj.readline(prompt)
+      else
+        $stdout.print prompt
+        @obj.readline
       end
     end
 
@@ -251,6 +253,7 @@ module PryRemote
       output = IOUndumpedProxy.new(output)
 
       client.input  = input
+
       client.output = output
 
       if capture?
