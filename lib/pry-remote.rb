@@ -5,7 +5,7 @@ require 'readline'
 require 'open3'
 
 module PryRemote
-  DefaultHost = "127.0.0.1"
+  DefaultHost = "localhost"
   DefaultPort = 9876
 
   # A class to represent an input object created from DRb. This is used because
@@ -225,7 +225,7 @@ module PryRemote
 
       exit if params.help?
 
-      @host = params[:host]
+      @host = params[:server]
       @port = params[:port]
 
       @capture = params[:capture]
