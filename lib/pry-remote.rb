@@ -78,6 +78,12 @@ module PryRemote
       @obj << data
       self
     end
+
+    # Some versions of Pry expect $stdout or its output objects to respond to
+    # this message.
+    def tty?
+      false
+    end
   end
 
   # Ensure that system (shell command) output is redirected for remote session.
