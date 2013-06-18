@@ -252,7 +252,8 @@ module PryRemote
     # @param [IO] input  Object holding input for pry-remote
     # @param [IO] output Object pry-debug will send its output to
     def run(input = Pry.config.input, output = Pry.config.output)
-      DRb.start_service
+      local_ip = UDPSocket.open {|s| s.connect(@host, 1); s.addr.last}
+      DRb.start_service "druby://#{local_ip}:0"
       client = DRbObject.new(nil, uri)
 
       input  = IOUndumpedProxy.new(input)
