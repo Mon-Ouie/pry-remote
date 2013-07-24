@@ -135,6 +135,7 @@ module PryRemote
     def initialize(object, host = DefaultHost, port = DefaultPort, options = {})
       @host    = host
       @port    = port
+
       @object  = object
       @options = options
 
@@ -198,7 +199,6 @@ module PryRemote
     # Actually runs pry-remote
     def run
       setup
-
       Pry.start(@object, @options.merge(:input => client.input_proxy, :output => client.output))
     ensure
       teardown
