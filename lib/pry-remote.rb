@@ -133,13 +133,14 @@ module PryRemote
     end
 
     def initialize(object, host = DefaultHost, port = DefaultPort)
-      @uri    = "druby://#{host}:#{port}"
+      @host   = host
+      @port   = port
       @object = object
 
       @client = PryRemote::Client.new
-      DRb.start_service @uri, @client
+      DRb.start_service uri, @client
 
-      puts "[pry-remote] Waiting for client on #@uri"
+      puts "[pry-remote] Waiting for client on #{uri}"
       @client.wait
 
       puts "[pry-remote] Client received, starting remote session"
@@ -206,6 +207,18 @@ module PryRemote
 
     # @return [PryServer::Client] Client connecting to the pry-remote server
     attr_reader :client
+    
+    # @return [String] Host of the server
+    attr_reader :host
+
+    # @return [Integer] Port of the server
+    attr_reader :port
+
+    # @return [String] URI for DRb
+    def uri
+      "druby://#{host}:#{port}"
+    end
+
   end
 
   # Parses arguments and allows to start the client.
