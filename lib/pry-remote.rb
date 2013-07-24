@@ -128,13 +128,14 @@ module PryRemote
   end
 
   class Server
-    def self.run(object, host = DefaultHost, port = DefaultPort)
-      new(object, host, port).run
+    def self.run(object, host = DefaultHost, port = DefaultPort, options = {})
+      new(object, host, port, options).run
     end
 
-    def initialize(object, host = DefaultHost, port = DefaultPort)
+    def initialize(object, host = DefaultHost, port = DefaultPort, options = {})
       @uri    = "druby://#{host}:#{port}"
-      @object = object
+      @object  = object
+      @options = options
 
       @client = PryRemote::Client.new
       DRb.start_service @uri, @client
@@ -196,7 +197,8 @@ module PryRemote
     # Actually runs pry-remote
     def run
       setup
-      Pry.start(@object, :input => client.input_proxy, :output => client.output)
+      
+      Pry.start(@object, @options.merge(:input => client.input_proxy, :output => client.output))
     ensure
       teardown
     end
@@ -281,8 +283,9 @@ class Object
   #
   # @param [String]  host Host of the server
   # @param [Integer] port Port of the server
-  def remote_pry(host = PryRemote::DefaultHost, port = PryRemote::DefaultPort)
-    PryRemote::Server.new(self, host, port).run
+  # @param [Hash] options Options to be passed to Pry.start
+  def remote_pry(host = PryRemote::DefaultHost, port = PryRemote::DefaultPort, options = {})
+    PryRemote::Server.new(self, host, port, options).run
   end
 
   # a handy alias as many people may think the method is named after the gem
