@@ -221,7 +221,6 @@ module PryRemote
     def uri
       "druby://#{host}:#{port}"
     end
-
   end
 
   # Parses arguments and allows to start the client.
@@ -265,7 +264,7 @@ module PryRemote
 
     attr_reader :wait
     attr_reader :capture
-    alias :wait? :wait
+    alias wait? wait
     alias capture? capture
 
     # Connects to the server
