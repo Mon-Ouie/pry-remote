@@ -5,7 +5,7 @@ require 'readline'
 require 'open3'
 
 module PryRemote
-  DefaultHost = "localhost"
+  DefaultHost = "127.0.0.1"
   DefaultPort = 9876
 
   # A class to represent an input object created from DRb. This is used because
@@ -199,6 +199,7 @@ module PryRemote
     # Actually runs pry-remote
     def run
       setup
+
       Pry.start(@object, @options.merge(:input => client.input_proxy, :output => client.output))
     ensure
       teardown
