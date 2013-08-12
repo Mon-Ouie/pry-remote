@@ -54,7 +54,9 @@ module PryRemote
     end
 
     def readline(prompt)
-      if @obj.method(:readline).arity == 1
+      if Readline == @obj
+        @obj.readline(prompt, true)
+      elsif @obj.method(:readline).arity == 1
         @obj.readline(prompt)
       else
         $stdout.print prompt
