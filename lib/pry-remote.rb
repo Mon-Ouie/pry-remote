@@ -72,6 +72,10 @@ module PryRemote
       @obj.print(*objs)
     end
 
+    def printf(*args)
+      @obj.printf(*args)
+    end
+
     def write(data)
       @obj.write data
     end
