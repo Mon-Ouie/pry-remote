@@ -147,11 +147,6 @@ module PryRemote
 
       @client = PryRemote::Client.new
       DRb.start_service uri, @client
-
-      puts "[pry-remote] Waiting for client on #{uri}"
-      @client.wait
-
-      puts "[pry-remote] Client received, starting remote session"
     end
 
     # Code that has to be called for Pry-remote to work properly
@@ -204,6 +199,10 @@ module PryRemote
 
     # Actually runs pry-remote
     def run
+      puts "[pry-remote] Waiting for client on #{uri}"
+      @client.wait
+
+      puts "[pry-remote] Client received, starting remote session"
       setup
 
       Pry.start(@object, @options.merge(:input => client.input_proxy, :output => client.output))
