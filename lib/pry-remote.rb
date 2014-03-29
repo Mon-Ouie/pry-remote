@@ -156,18 +156,15 @@ module PryRemote
 
     # Code that has to be called for Pry-remote to work properly
     def setup
-      # If client passed stdout and stderr, redirect actual messages there.
-      @old_stdout, $stdout = if @client.stdout
-                               [$stdout, @client.stdout]
-                             else
-                               [$stdout, $stdout]
-                             end
+      @hooks = Pry::Hooks.new
 
-      @old_stderr, $stderr = if @client.stderr
-                               [$stderr, @client.stderr]
-                             else
-                               [$stderr, $stderr]
-                             end
+      @hooks.add_hook :before_eval, :pry_remote_capture do
+        capture_output
+      end
+
+      @hooks.add_hook :after_eval, :pry_remote_uncapture do
+        uncapture_output
+      end
 
       # Before Pry starts, save the pager config.
       # We want to disable this because the pager won't do anything useful in
@@ -180,10 +177,6 @@ module PryRemote
 
     # Code that has to be called after setup to return to the initial state
     def teardown
-      # Reset output streams
-      $stdout = @old_stdout
-      $stderr = @old_stderr
-
       # Reset config
       Pry.config.pager = @old_pager
 
@@ -202,11 +195,34 @@ module PryRemote
       end
     end
 
+    # Captures $stdout and $stderr if so requested by the client.
+    def capture_output
+      @old_stdout, $stdout = if @client.stdout
+                               [$stdout, @client.stdout]
+                             else
+                               [$stdout, $stdout]
+                             end
+
+      @old_stderr, $stderr = if @client.stderr
+                               [$stderr, @client.stderr]
+                             else
+                               [$stderr, $stderr]
+                             end
+    end
+
+    # Resets $stdout and $stderr to their previous values.
+    def uncapture_output
+      $stdout = @old_stdout
+      $stderr = @old_stderr
+    end
+
     # Actually runs pry-remote
     def run
       setup
 
-      Pry.start(@object, @options.merge(:input => client.input_proxy, :output => client.output))
+      Pry.start(@object, @options.merge(:input => client.input_proxy,
+                                        :output => client.output,
+                                        :hooks => @hooks))
     ensure
       teardown
     end
