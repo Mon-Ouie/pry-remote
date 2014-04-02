@@ -45,7 +45,7 @@ module PryRemote
 
     def completion_proc=(val)
       if @obj.respond_to? :completion_proc=
-        @obj.completion_proc = val
+        @obj.completion_proc = proc { |*args, &block| val.call(*args, &block) }
       end
     end
 
