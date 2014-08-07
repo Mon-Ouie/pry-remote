@@ -7,6 +7,7 @@ require 'open3'
 module PryRemote
   DefaultHost = "127.0.0.1"
   DefaultPort = 9876
+  DefaultClientPort = 0
 
   # A class to represent an input object created from DRb. This is used because
   # Pry checks for arity to know if a prompt should be passed to the object.
@@ -267,6 +268,8 @@ module PryRemote
            :default => DefaultHost
         on :p, :port=, "Port of the server (#{DefaultPort})", :argument => :optional,
            :as => Integer, :default => DefaultPort
+        on :P, :client_port=, "Port of the client (#{DefaultClientPort})", :argument => :optional,
+           :as => Integer, :default => DefaultClientPort
         on :w, :wait, "Wait for the pry server to come up",
            :default => false
         on :r, :persist, "Persist the client to wait for the pry server to come up each time",
@@ -280,6 +283,7 @@ module PryRemote
 
       @host = params[:server]
       @port = params[:port]
+      @client_port = params[:client_port]
 
       @wait = params[:wait]
       @persist = params[:persist]
@@ -319,7 +323,7 @@ module PryRemote
     # @param [IO] output Object pry-debug will send its output to
     def connect(input = Pry.config.input, output = Pry.config.output)
       local_ip = UDPSocket.open {|s| s.connect(@host, 1); s.addr.last}
-      DRb.start_service "druby://#{local_ip}:0"
+      DRb.start_service "druby://#{local_ip}:#{@client_port}"
       client = DRbObject.new(nil, uri)
 
       cleanup(client)
@@ -358,7 +362,7 @@ module PryRemote
         # The method we are calling here doesn't matter.
         # This is a hack to close the connection of DRb.
         client.cleanup
-      rescue DRb::DRbConnError, NoMethodError
+      rescue DRb::DRbConnError, NoMethodError, DRb::DRbUnknownError
       end
     end
   end
