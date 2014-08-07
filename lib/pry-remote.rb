@@ -115,8 +115,14 @@ module PryRemote
     end
   end
 
+  ClientEditor = proc do |initial_content, line|
+    # Hack to use Pry::Editor
+    Pry::Editor.new(Pry.new).edit_tempfile_with_content(initial_content, line)
+  end
+
   # A client is used to retrieve information from the client program.
-  Client = Struct.new :input, :output, :thread, :stdout, :stderr do
+  Client = Struct.new(:input, :output, :thread, :stdout, :stderr,
+                      :editor) do
     # Waits until both an input and output are set
     def wait
       sleep 0.01 until input and output and thread
@@ -168,14 +174,15 @@ module PryRemote
 
       # As above, but for system config
       Pry.config.system, @old_system = PryRemote::System, Pry.config.system
+
+      Pry.config.editor, @old_editor = editor_proc, Pry.config.editor
     end
 
     # Code that has to be called after setup to return to the initial state
     def teardown
       # Reset config
-      Pry.config.pager = @old_pager
-
-      # Reset sysem
+      Pry.config.editor = @old_editor
+      Pry.config.pager  = @old_pager
       Pry.config.system = @old_system
 
       puts "[pry-remote] Remote session terminated"
@@ -209,6 +216,12 @@ module PryRemote
     def uncapture_output
       $stdout = @old_stdout
       $stderr = @old_stderr
+    end
+
+    def editor_proc
+      proc do |file, line|
+        File.write(file, @client.editor.call(File.read(file), line))
+      end
     end
 
     # Actually runs pry-remote
@@ -330,6 +343,8 @@ module PryRemote
         client.stdout = $stdout
         client.stderr = $stderr
       end
+
+      client.editor = ClientEditor
 
       client.thread = Thread.current
 
