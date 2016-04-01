@@ -21,10 +21,15 @@ Here's a program starting pry-remote:
 
     Foo.new 10, 20
 
-Running it will prompt you with a message telling you Pry is waiting for a
+Run pry-remote via this command,
+    
+    $ pry-remote
+
+
+Running it will prompt you with a message telling you Pry is waiting for a 
 program to connect itself to it:
 
-     [pry-remote] Waiting for client on drb://localhost:9876
+    [pry-remote] Waiting for client on drb://localhost:9876
 
 You can then connect yourself using ``pry-remote``:
 
