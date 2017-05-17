@@ -5,8 +5,8 @@ require 'readline'
 require 'open3'
 
 module PryRemote
-  DefaultHost = "127.0.0.1"
-  DefaultPort = 9876
+  DefaultHost = ENV['PRY_REMOTE_HOST'] || "127.0.0.1"
+  DefaultPort = ENV['PRY_REMOTE_PORT'] || 9876
 
   # A class to represent an input object created from DRb. This is used because
   # Pry checks for arity to know if a prompt should be passed to the object.
