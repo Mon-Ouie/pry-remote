@@ -56,3 +56,12 @@ You can then connect yourself using ``pry-remote``:
     ]
     pry(#<Foo:0x00000001efb3b0>):3> ^D
 
+## Specifying port and host
+
+Server:
+
+```binding.remote_pry("11.111.0.165", 4000)```
+
+Client:
+
+```pry-remote -s 11.111.0.165 -p 4000 ```
