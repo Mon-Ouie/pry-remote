@@ -8,7 +8,7 @@ Gem::Specification.new do |s|
 
   s.summary     = "Connect to Pry remotely"
   s.description = "Connect to Pry remotely using DRb"
-  s.homepage    = "http://github.com/Mon-Ouie/pry-remote"
+  s.homepage    = "https://github.com/Mon-Ouie/pry-remote"
 
   s.email   = "mon.ouie@gmail.com"
   s.authors = ["Mon ouie"]
