@@ -1,12 +1,12 @@
-require 'pry'
-require 'slop'
-require 'drb'
-require 'readline'
-require 'open3'
+require "pry"
+require "slop"
+require "drb"
+require "readline"
+require "open3"
 
 module PryRemote
-  DefaultHost = ENV['PRY_REMOTE_DEFAULT_HOST'] || "127.0.0.1"
-  DefaultPort = ENV['PRY_REMOTE_DEFAULT_PORT'] || 9876
+  DefaultHost = ENV["PRY_REMOTE_DEFAULT_HOST"] || "127.0.0.1"
+  DefaultPort = ENV["PRY_REMOTE_DEFAULT_PORT"] || 9876
 
   # A class to represent an input object created from DRb. This is used because
   # Pry checks for arity to know if a prompt should be passed to the object.
@@ -17,7 +17,7 @@ module PryRemote
     def readline(prompt)
       case readline_arity
       when 1 then input.readline(prompt)
-      else        input.readline
+      else input.readline
       end
     end
 
@@ -145,10 +145,10 @@ module PryRemote
     end
 
     def initialize(object, host = DefaultHost, port = DefaultPort, options = {})
-      @host    = host
-      @port    = port
+      @host = host
+      @port = port
 
-      @object  = object
+      @object = object
       @options = options
 
       @client = PryRemote::Client.new
@@ -182,7 +182,7 @@ module PryRemote
     def teardown
       # Reset config
       Pry.config.editor = @old_editor
-      Pry.config.pager  = @old_pager
+      Pry.config.pager = @old_pager
       Pry.config.system = @old_system
 
       puts "[pry-remote] Remote session terminated"
@@ -200,16 +200,16 @@ module PryRemote
     # Captures $stdout and $stderr if so requested by the client.
     def capture_output
       @old_stdout, $stdout = if @client.stdout
-                               [$stdout, @client.stdout]
-                             else
-                               [$stdout, $stdout]
-                             end
+          [$stdout, @client.stdout]
+        else
+          [$stdout, $stdout]
+        end
 
       @old_stderr, $stderr = if @client.stderr
-                               [$stderr, @client.stderr]
-                             else
-                               [$stderr, $stderr]
-                             end
+          [$stderr, @client.stderr]
+        else
+          [$stderr, $stderr]
+        end
     end
 
     # Resets $stdout and $stderr to their previous values.
@@ -264,9 +264,9 @@ module PryRemote
         banner "#$PROGRAM_NAME [OPTIONS]"
 
         on :s, :server=, "Host of the server (#{DefaultHost})", :argument => :optional,
-           :default => DefaultHost
+                                                                :default => DefaultHost
         on :p, :port=, "Port of the server (#{DefaultPort})", :argument => :optional,
-           :as => Integer, :default => DefaultPort
+                                                              :as => Integer, :default => DefaultPort
         on :w, :wait, "Wait for the pry server to come up",
            :default => false
         on :r, :persist, "Persist the client to wait for the pry server to come up each time",
@@ -318,17 +318,17 @@ module PryRemote
     # @param [IO] input  Object holding input for pry-remote
     # @param [IO] output Object pry-debug will send its output to
     def connect(input = Pry.config.input, output = Pry.config.output)
-      local_ip = UDPSocket.open {|s| s.connect(@host, 1); s.addr.last}
+      local_ip = UDPSocket.open { |s| s.connect(@host, 1); s.addr.last }
       DRb.start_service "druby://#{local_ip}:0"
       client = DRbObject.new(nil, uri)
 
       cleanup(client)
 
-      input  = IOUndumpedProxy.new(input)
+      input = IOUndumpedProxy.new(input)
       output = IOUndumpedProxy.new(output)
 
       begin
-        client.input  = input
+        client.input = input
         client.output = output
       rescue DRb::DRbConnError => ex
         if wait? || persist?
