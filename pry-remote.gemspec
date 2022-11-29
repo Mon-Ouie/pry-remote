@@ -4,13 +4,13 @@
 Gem::Specification.new do |s|
   s.name = "pry-remote"
 
-  s.version = "0.1.8"
+  s.version = "0.1.9"
 
-  s.summary     = "Connect to Pry remotely"
+  s.summary = "Connect to Pry remotely"
   s.description = "Connect to Pry remotely using DRb"
-  s.homepage    = "http://github.com/Mon-Ouie/pry-remote"
+  s.homepage = "http://github.com/Mon-Ouie/pry-remote"
 
-  s.email   = "mon.ouie@gmail.com"
+  s.email = "mon.ouie@gmail.com"
   s.authors = ["Mon ouie"]
 
   s.files |= Dir["lib/**/*.rb"]
@@ -19,8 +19,8 @@ Gem::Specification.new do |s|
 
   s.require_paths = ["lib"]
 
-  s.add_dependency "slop", "~> 3.0"
-  s.add_dependency "pry",  "~> 0.9"
+  s.add_dependency "slop", "~> 4.0"
+  s.add_dependency "pry", "~> 0.10"
 
   s.executables = ["pry-remote"]
 end
