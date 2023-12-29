@@ -19,6 +19,7 @@ Gem::Specification.new do |s|
 
   s.require_paths = ["lib"]
 
+  s.add_dependency "drb"
   s.add_dependency "slop", "~> 3.0"
   s.add_dependency "pry",  "~> 0.9"
 
