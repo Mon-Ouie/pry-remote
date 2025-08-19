@@ -1,7 +1,7 @@
 ## next
 
-* Upgraded to slop 4.x (#1)
-* Require Pry >= 0.15 (#1)
+* Upgraded to slop 4.x (#89)
+* Require Pry >= 0.15 (#89)
 
 ## 1.2.0 (2025-01-24)
 
