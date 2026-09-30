@@ -21,6 +21,7 @@ Gem::Specification.new do |s|
 
   s.add_dependency "slop", "~> 3.0"
   s.add_dependency "pry",  "~> 0.9"
+  s.add_dependency "readline"
 
   s.executables = ["pry-remote"]
 end
